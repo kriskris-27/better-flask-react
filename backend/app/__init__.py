@@ -1,8 +1,8 @@
 import os
-import psycopg2  # type: ignore
-from flask import Flask  # type: ignore
-from flask_cors import CORS  # type: ignore
-from .config import app_config  # type: ignore
+import psycopg2
+from flask import Flask
+from flask_cors import CORS
+from .config import app_config
 
 def create_app():
     """Application factory for creating and configuring the Flask app."""
@@ -15,7 +15,7 @@ def create_app():
     CORS(app)
     
     # Initialize Error Handlers
-    from .errors import register_error_handlers  # type: ignore
+    from .errors import register_error_handlers
     register_error_handlers(app)
     
     # Initialize Database

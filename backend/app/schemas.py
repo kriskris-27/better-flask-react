@@ -1,4 +1,4 @@
-from marshmallow import Schema, fields, validate, EXCLUDE  # type: ignore
+from marshmallow import Schema, fields, validate, EXCLUDE
 
 class ApplicationSchema(Schema):
     """Schema for validating and serializing Application data."""
@@ -34,6 +34,6 @@ class ContactSchema(Schema):
 
 # Instances for easy import
 application_schema = ApplicationSchema()
-applications_schema = ApplicationSchema(many=True)  # type: ignore
+applications_schema = ApplicationSchema(many=True)
 contact_schema = ContactSchema()
-contacts_schema = ContactSchema(many=True)  # type: ignore
+contacts_schema = ContactSchema(many=True)

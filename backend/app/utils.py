@@ -1,4 +1,4 @@
-from flask import jsonify  # type: ignore
+from flask import jsonify
 
 def standard_response(success=True, data=None, error=None):
     """
