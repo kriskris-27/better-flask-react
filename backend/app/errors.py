@@ -1,4 +1,4 @@
-from flask import jsonify
+from flask import jsonify  # type: ignore
 
 class AppException(Exception):
     """Base exception class for all application errors."""
