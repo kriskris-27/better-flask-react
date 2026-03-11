@@ -19,6 +19,10 @@ class ApplicationSchema(Schema):
     interview_intel = fields.Str(dump_only=True)
     created_at = fields.DateTime(dump_only=True)
     updated_at = fields.DateTime(dump_only=True)
+    
+    # Nested fields for full retrieval
+    contacts = fields.List(fields.Nested(lambda: ContactSchema()), dump_only=True)
+    history = fields.List(fields.Dict(), dump_only=True)
 
 class ContactSchema(Schema):
     """Schema for validating and serializing Contact data."""

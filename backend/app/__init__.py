@@ -21,6 +21,10 @@ def create_app():
     # Initialize Database
     init_db(app)
     
+    # Register Blueprints
+    from .routes.applications import applications_bp
+    app.register_blueprint(applications_bp, url_prefix='/api/applications')
+    
     @app.route('/health')
     def health_check():
         return {"status": "healthy", "service": "job-tracker-api"}, 200
