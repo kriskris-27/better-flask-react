@@ -10,6 +10,7 @@ class ApplicationSchema(Schema):
     company = fields.Str(required=True, validate=validate.Length(min=1, max=255))
     role = fields.Str(required=True, validate=validate.Length(min=1, max=255))
     location = fields.Str(validate=validate.Length(max=255))
+    source = fields.Str(validate=validate.Length(max=255))
     applied_on = fields.Date()
     status = fields.Str(
         validate=validate.OneOf(['APPLIED', 'SCREENING', 'INTERVIEWING', 'OFFERED', 'ACCEPTED', 'REJECTED']),

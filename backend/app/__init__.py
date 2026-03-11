@@ -23,7 +23,10 @@ def create_app():
     
     # Register Blueprints
     from .routes.applications import applications_bp
+    from .routes.contacts import contacts_bp
+    
     app.register_blueprint(applications_bp, url_prefix='/api/applications')
+    app.register_blueprint(contacts_bp, url_prefix='/api/contacts')
     
     @app.route('/health')
     def health_check():

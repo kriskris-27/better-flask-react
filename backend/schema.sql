@@ -22,6 +22,7 @@ CREATE TABLE IF NOT EXISTS applications (
     role VARCHAR(255) NOT NULL,
     location VARCHAR(255),
     applied_on DATE DEFAULT CURRENT_DATE,
+    source VARCHAR(255),
     status application_status DEFAULT 'APPLIED' NOT NULL,
     notes TEXT,
     interview_intel TEXT,

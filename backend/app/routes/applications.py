@@ -1,9 +1,9 @@
 from flask import Blueprint, request
 from marshmallow import ValidationError as MarshmallowValidationError
-from ..models import get_application_by_id, get_db_connection
+from ..models import get_application_by_id, get_db_connection, update_application_status
 from ..schemas import applications_schema, application_schema
 from ..utils import standard_response
-from ..errors import ResourceNotFoundError, ValidationError
+from ..errors import ResourceNotFoundError, ValidationError, StateMachineError
 
 applications_bp = Blueprint('applications', __name__)
 
@@ -65,14 +65,15 @@ def create_application():
         # 1. Insert into applications table
         cur.execute(
             """
-            INSERT INTO applications (company, role, location, status, notes)
-            VALUES (%s, %s, %s, %s, %s)
-            RETURNING id, company, role, location, status, notes, applied_on, created_at, updated_at
+            INSERT INTO applications (company, role, location, source, status, notes)
+            VALUES (%s, %s, %s, %s, %s, %s)
+            RETURNING id, company, role, location, source, status, notes, applied_on, created_at, updated_at
             """,
             (
                 validated_data['company'],
                 validated_data['role'],
                 validated_data.get('location'),
+                validated_data.get('source'),
                 status,
                 validated_data.get('notes')
             )
@@ -105,3 +106,31 @@ def create_application():
     finally:
         cur.close()
         conn.close()
+
+@applications_bp.route('/<int:app_id>/status', methods=['PATCH'])
+def transition_status(app_id):
+    """
+    Updates the status of an application and logs the transition.
+    Enforces State Machine rules (e.g., APPLIED -> SCREENING).
+    """
+    data = request.get_json()
+    if not data or 'to_status' not in data:
+        raise ValidationError("Missing 'to_status' field in JSON payload.")
+    
+    to_status = data['to_status']
+    note = data.get('note')
+
+    try:
+        # 1. Update status ensuring state machine validity (this is transactional in models.py)
+        update_application_status(app_id, to_status, note)
+        
+        # 2. Return the freshly updated Application object (which includes new history)
+        updated_app = get_application_by_id(app_id)
+        result = application_schema.dump(updated_app)
+        
+        return standard_response(data=result)
+        
+    except StateMachineError as e:
+        # Invalid state transition (e.g. going backward)
+        return standard_response(success=False, error=str(e), status_code=403)
+
