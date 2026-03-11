@@ -14,6 +14,10 @@ def create_app():
     # Enable CORS for frontend interaction
     CORS(app)
     
+    # Initialize Error Handlers
+    from .errors import register_error_handlers
+    register_error_handlers(app)
+    
     # Initialize Database
     init_db(app)
     
