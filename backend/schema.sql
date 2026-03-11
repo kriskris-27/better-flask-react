@@ -58,6 +58,7 @@ BEGIN
 END;
 $$ language 'plpgsql';
 
+
 CREATE TRIGGER update_applications_updated_at
     BEFORE UPDATE ON applications
     FOR EACH ROW
