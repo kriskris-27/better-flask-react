@@ -4,6 +4,7 @@ from ..models import get_application_by_id, get_db_connection, update_applicatio
 from ..schemas import applications_schema, application_schema
 from ..utils import standard_response
 from ..errors import ResourceNotFoundError, ValidationError, StateMachineError
+from ..services.ai_service import generate_interview_prep
 
 applications_bp = Blueprint('applications', __name__)
 
@@ -121,10 +122,19 @@ def transition_status(app_id):
     note = data.get('note')
 
     try:
-        # 1. Update status ensuring state machine validity (this is transactional in models.py)
-        update_application_status(app_id, to_status, note)
+        # 1. Fetch current app data to get company/role for AI if needed
+        app_data = get_application_by_id(app_id)
+        intel = None
         
-        # 2. Return the freshly updated Application object (which includes new history)
+        # 2. Trigger Gemini AI if moving to INTERVIEWING
+        if to_status == 'INTERVIEWING':
+            # We already have company and role from app_data
+            intel = generate_interview_prep(app_data['company'], app_data['role'])
+
+        # 3. Update status ensuring state machine validity
+        update_application_status(app_id, to_status, note, intel)
+        
+        # 4. Return the freshly updated Application object
         updated_app = get_application_by_id(app_id)
         result = application_schema.dump(updated_app)
         

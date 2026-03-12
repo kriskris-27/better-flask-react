@@ -11,6 +11,7 @@ class Config:
     DATABASE_URL: str = os.environ.get('DATABASE_URL', '')
     
     GEMINI_API_KEY: str = os.environ.get('GEMINI_API_KEY', '')
+    LLM_MODEL: str = os.environ.get('LLM_MODEL', 'gemini-1.5-flash')
     
     DEBUG: bool = False
     TESTING: bool = False

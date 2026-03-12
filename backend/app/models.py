@@ -61,7 +61,7 @@ def get_application_by_id(app_id):
         cur.close()
         conn.close()
 
-def update_application_status(app_id, to_status, note=None):
+def update_application_status(app_id, to_status, note=None, intel=None):
     """Updates status and logs history within a single transaction."""
     conn = get_db_connection()
     cur = conn.cursor()
@@ -79,10 +79,16 @@ def update_application_status(app_id, to_status, note=None):
         validate_state_transition(from_status, to_status)
 
         # 3. Update Application Table
-        cur.execute(
-            "UPDATE applications SET status = %s, updated_at = %s WHERE id = %s",
-            (to_status, datetime.utcnow(), app_id)
-        )
+        if intel:
+            cur.execute(
+                "UPDATE applications SET status = %s, updated_at = %s, interview_intel = %s WHERE id = %s",
+                (to_status, datetime.utcnow(), intel, app_id)
+            )
+        else:
+            cur.execute(
+                "UPDATE applications SET status = %s, updated_at = %s WHERE id = %s",
+                (to_status, datetime.utcnow(), app_id)
+            )
 
         # 4. Insert Audit Log (Status History)
         cur.execute(
