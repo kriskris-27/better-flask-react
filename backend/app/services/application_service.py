@@ -1,7 +1,12 @@
 """Application-related workflows that sit between routes and the DB."""
 
+import logging
+
 from app import get_db_connection
 from app.models import get_application_by_id
+
+
+logger = logging.getLogger(__name__)
 
 
 def list_applications(status_filter: str | None = None) -> list[dict]:
@@ -10,11 +15,13 @@ def list_applications(status_filter: str | None = None) -> list[dict]:
     cur = conn.cursor()
     try:
         if status_filter:
+            logger.info("Listing applications with status filter", extra={"status": status_filter})
             cur.execute(
                 "SELECT * FROM applications WHERE status = %s ORDER BY updated_at DESC",
                 (status_filter,),
             )
         else:
+            logger.info("Listing all applications")
             cur.execute("SELECT * FROM applications ORDER BY updated_at DESC")
 
         colnames = [desc[0] for desc in cur.description] if cur.description else []
@@ -31,6 +38,15 @@ def create_application(validated_data: dict) -> dict:
     Returns the fully-hydrated application (including contacts/history)
     via models.get_application_by_id for consistency.
     """
+    logger.info(
+        "Creating application",
+        extra={
+            "company": validated_data.get("company"),
+            "role": validated_data.get("role"),
+            "status": validated_data.get("status", "APPLIED"),
+        },
+    )
+
     conn = get_db_connection()
     cur = conn.cursor()
     try:

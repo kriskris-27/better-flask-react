@@ -1,8 +1,13 @@
 """Contact-related workflows between routes and the DB."""
 
+import logging
+
 from app import get_db_connection
 from app.errors import ResourceNotFoundError
 from app.models import get_application_by_id
+
+
+logger = logging.getLogger(__name__)
 
 
 def create_contact(validated_data: dict) -> dict:
@@ -11,6 +16,15 @@ def create_contact(validated_data: dict) -> dict:
 
     # Ensure the parent application exists; will raise ResourceNotFoundError if not.
     get_application_by_id(app_id)
+
+    logger.info(
+        "Creating contact",
+        extra={
+            "application_id": app_id,
+            "name": validated_data.get("name"),
+            "role": validated_data.get("role"),
+        },
+    )
 
     conn = get_db_connection()
     cur = conn.cursor()
@@ -44,6 +58,7 @@ def create_contact(validated_data: dict) -> dict:
 
 def delete_contact(contact_id: int) -> None:
     """Delete a contact by ID or raise ResourceNotFoundError if missing."""
+    logger.info("Deleting contact", extra={"contact_id": contact_id})
     conn = get_db_connection()
     cur = conn.cursor()
     try:
