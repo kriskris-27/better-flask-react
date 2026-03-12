@@ -21,8 +21,8 @@ def create_contact(validated_data: dict) -> dict:
         "Creating contact",
         extra={
             "application_id": app_id,
-            "name": validated_data.get("name"),
-            "role": validated_data.get("role"),
+            "contact_name": validated_data.get("name"),
+            "contact_role": validated_data.get("role"),
         },
     )
 
@@ -50,6 +50,7 @@ def create_contact(validated_data: dict) -> dict:
         return dict(zip(colnames, new_contact_row))
     except Exception as e:
         conn.rollback()
+        logger.exception("Failed to create contact", extra={"application_id": app_id})
         raise e
     finally:
         cur.close()
@@ -71,6 +72,7 @@ def delete_contact(contact_id: int) -> None:
         conn.commit()
     except Exception as e:
         conn.rollback()
+        logger.exception("Failed to delete contact", extra={"contact_id": contact_id})
         raise e
     finally:
         cur.close()

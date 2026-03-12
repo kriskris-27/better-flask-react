@@ -52,10 +52,17 @@ def register_error_handlers(app):
 
     @app.errorhandler(Exception)
     def handle_generic_exception(error):
-        # Log the error for production debugging
+        # Log the error for debugging
         app.logger.error(f"Unhandled Exception: {error}")
+
+        # In development, surface the actual error message to help debugging.
+        if app.config.get("DEBUG"):
+            message = str(error)
+        else:
+            message = "Something went wrong. Please try again later."
+
         return jsonify({
             "success": False,
             "data": None,
-            "error": "Something went wrong. Please try again later."
+            "error": message
         }), 500
