@@ -1,9 +1,15 @@
+"""Domain and persistence logic for job applications.
+
+Contains the application status state machine and low-level
+database operations used by the routes.
+"""
+
 from datetime import datetime
 from app.errors import StateMachineError, ResourceNotFoundError
 from app import get_db_connection
 
-# Allowed Transitions Map
-# Key: current status, Value: list of valid next statuses
+# Allowed transitions for the application status state machine.
+# Key: current status, Value: list of valid next statuses.
 VALID_TRANSITIONS = {
     'APPLIED': ['SCREENING', 'REJECTED'],
     'SCREENING': ['INTERVIEWING', 'REJECTED'],

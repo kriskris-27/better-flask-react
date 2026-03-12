@@ -1,11 +1,21 @@
+"""HTTP routes for working with job applications.
+
+These handlers validate/serialize payloads and delegate business
+logic to services and models.
+"""
+
 import flask
 from flask import request
 from marshmallow import ValidationError as MarshmallowValidationError
-from app.models import get_application_by_id, get_db_connection, update_application_status
+from app.models import get_application_by_id, update_application_status
 from app.schemas import applications_schema, application_schema
 from app.utils import standard_response
 from app.errors import ResourceNotFoundError, ValidationError, StateMachineError
 from app.services.ai_service import generate_interview_prep
+from app.services.application_service import (
+    list_applications as list_applications_service,
+    create_application as create_application_service,
+)
 
 applications_bp = flask.Blueprint('applications', __name__)
 
@@ -14,25 +24,13 @@ applications_bp = flask.Blueprint('applications', __name__)
 def list_applications():
     """Retrieve all applications, with optional status filtering."""
     status_filter = request.args.get('status')
-    
-    conn = get_db_connection()
-    cur = conn.cursor()
-    try:
-        if status_filter:
-            cur.execute("SELECT * FROM applications WHERE status = %s ORDER BY updated_at DESC", (status_filter,))
-        else:
-            cur.execute("SELECT * FROM applications ORDER BY updated_at DESC")
-            
-        colnames = [desc[0] for desc in cur.description] if cur.description else []
-        rows = cur.fetchall()
-        apps = [dict(zip(colnames, row)) for row in rows]
-        
-        # Serialize with marshmallow
-        result = applications_schema.dump(apps)
-        return standard_response(data=result)
-    finally:
-        cur.close()
-        conn.close()
+
+    # Fetch raw application rows via the service layer
+    apps = list_applications_service(status_filter)
+
+    # Serialize with marshmallow
+    result = applications_schema.dump(apps)
+    return standard_response(data=result)
 
 @applications_bp.route('/<int:app_id>', methods=['GET'])
 def get_application(app_id):
@@ -59,55 +57,11 @@ def create_application():
     except MarshmallowValidationError as err:
         return standard_response(success=False, error=err.messages, status_code=422)
 
-    conn = get_db_connection()
-    cur = conn.cursor()
-    try:
-        status = validated_data.get('status', 'APPLIED')
-        
-        # 1. Insert into applications table
-        cur.execute(
-            """
-            INSERT INTO applications (company, role, location, source, status, notes)
-            VALUES (%s, %s, %s, %s, %s, %s)
-            RETURNING id, company, role, location, source, status, notes, applied_on, created_at, updated_at
-            """,
-            (
-                validated_data['company'],
-                validated_data['role'],
-                validated_data.get('location'),
-                validated_data.get('source'),
-                status,
-                validated_data.get('notes')
-            )
-        )
-        
-        new_app_row = cur.fetchone()
-        colnames = [desc[0] for desc in cur.description]
-        new_app = dict(zip(colnames, new_app_row))
-        
-        # 2. Insert initial entry into status_history
-        cur.execute(
-            """
-            INSERT INTO status_history (application_id, from_status, to_status, note)
-            VALUES (%s, %s, %s, %s)
-            """,
-            (new_app['id'], None, status, "Application manually created")
-        )
+    # Delegate creation and transactional work to the service layer
+    full_app_data = create_application_service(validated_data)
+    result = application_schema.dump(full_app_data)
 
-        conn.commit()
-
-        # 3. Fetch the full, newly created application record to return it
-        full_app_data = get_application_by_id(new_app['id'])
-        result = application_schema.dump(full_app_data)
-        
-        return standard_response(data=result, status_code=201)
-
-    except Exception as e:
-        conn.rollback()
-        raise e
-    finally:
-        cur.close()
-        conn.close()
+    return standard_response(data=result, status_code=201)
 
 @applications_bp.route('/<int:app_id>/status', methods=['PATCH'])
 def transition_status(app_id):

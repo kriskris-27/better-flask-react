@@ -1,3 +1,9 @@
+"""Environment-based configuration for the Flask app.
+
+Configuration is selected via FLASK_ENV (dev, test, prod) and
+read from environment variables using python-dotenv.
+"""
+
 import os
 from dotenv import load_dotenv
 

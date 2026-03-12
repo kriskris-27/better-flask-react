@@ -1,0 +1,79 @@
+"""Application-related workflows that sit between routes and the DB."""
+
+from app import get_db_connection
+from app.models import get_application_by_id
+
+
+def list_applications(status_filter: str | None = None) -> list[dict]:
+    """Return raw application rows as dictionaries, optionally filtered by status."""
+    conn = get_db_connection()
+    cur = conn.cursor()
+    try:
+        if status_filter:
+            cur.execute(
+                "SELECT * FROM applications WHERE status = %s ORDER BY updated_at DESC",
+                (status_filter,),
+            )
+        else:
+            cur.execute("SELECT * FROM applications ORDER BY updated_at DESC")
+
+        colnames = [desc[0] for desc in cur.description] if cur.description else []
+        rows = cur.fetchall()
+        return [dict(zip(colnames, row)) for row in rows]
+    finally:
+        cur.close()
+        conn.close()
+
+
+def create_application(validated_data: dict) -> dict:
+    """Create a new application and its initial status history entry.
+
+    Returns the fully-hydrated application (including contacts/history)
+    via models.get_application_by_id for consistency.
+    """
+    conn = get_db_connection()
+    cur = conn.cursor()
+    try:
+        status = validated_data.get("status", "APPLIED")
+
+        # 1. Insert into applications table
+        cur.execute(
+            """
+            INSERT INTO applications (company, role, location, source, status, notes)
+            VALUES (%s, %s, %s, %s, %s, %s)
+            RETURNING id, company, role, location, source, status, notes, applied_on, created_at, updated_at
+            """,
+            (
+                validated_data["company"],
+                validated_data["role"],
+                validated_data.get("location"),
+                validated_data.get("source"),
+                status,
+                validated_data.get("notes"),
+            ),
+        )
+
+        new_app_row = cur.fetchone()
+        colnames = [desc[0] for desc in cur.description]
+        new_app = dict(zip(colnames, new_app_row))
+
+        # 2. Insert initial entry into status_history
+        cur.execute(
+            """
+            INSERT INTO status_history (application_id, from_status, to_status, note)
+            VALUES (%s, %s, %s, %s)
+            """,
+            (new_app["id"], None, status, "Application manually created"),
+        )
+
+        conn.commit()
+
+        # 3. Fetch and return the full, newly created application record
+        return get_application_by_id(new_app["id"])
+    except Exception as e:
+        conn.rollback()
+        raise e
+    finally:
+        cur.close()
+        conn.close()
+

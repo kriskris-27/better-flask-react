@@ -1,3 +1,9 @@
+"""Flask application factory and database initialization.
+
+This module wires together configuration, CORS, error handling,
+database initialization, blueprints, and a simple health check.
+"""
+
 import os
 import psycopg2
 from flask import Flask
