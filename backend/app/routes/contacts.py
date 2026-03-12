@@ -1,11 +1,12 @@
-from flask import Blueprint, request
+import flask
+from flask import request
 from marshmallow import ValidationError as MarshmallowValidationError
-from ..schemas import contact_schema
-from ..utils import standard_response
-from ..errors import ValidationError, ResourceNotFoundError
-from ..models import get_db_connection, get_application_by_id
+from app.schemas import contact_schema
+from app.utils import standard_response
+from app.errors import ValidationError, ResourceNotFoundError
+from app.models import get_db_connection, get_application_by_id
 
-contacts_bp = Blueprint('contacts', __name__)
+contacts_bp = flask.Blueprint('contacts', __name__)
 
 @contacts_bp.route('/', methods=['POST'], strict_slashes=False)
 @contacts_bp.route('', methods=['POST'], strict_slashes=False)

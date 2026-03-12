@@ -9,7 +9,7 @@ A tool that helps you track every job you've applied to, what stage it's in, and
 - **Contact Management**: Keep track of people you spoke to at each company.
 
 ## Tech Stack
-- **Backend**: Python, Flask, SQLite, Marshmallow, Pytest.
+- **Backend**: Python (Flask), PostgreSQL (Neon), Psycopg2, Marshmallow.
 - **Frontend**: React, Vite, Gemini API.
 
 ## Setup

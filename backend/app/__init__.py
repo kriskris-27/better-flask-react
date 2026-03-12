@@ -2,7 +2,7 @@ import os
 import psycopg2
 from flask import Flask
 from flask_cors import CORS
-from .config import app_config
+from app.config import app_config
 
 def create_app():
     """Application factory for creating and configuring the Flask app."""
@@ -15,15 +15,15 @@ def create_app():
     CORS(app)
     
     # Initialize Error Handlers
-    from .errors import register_error_handlers
+    from app.errors import register_error_handlers
     register_error_handlers(app)
     
     # Initialize Database
     init_db(app)
     
     # Register Blueprints
-    from .routes.applications import applications_bp
-    from .routes.contacts import contacts_bp
+    from app.routes.applications import applications_bp
+    from app.routes.contacts import contacts_bp
     
     app.register_blueprint(applications_bp, url_prefix='/api/applications')
     app.register_blueprint(contacts_bp, url_prefix='/api/contacts')

@@ -1,5 +1,5 @@
 import google.generativeai as genai
-from ..config import app_config
+from app.config import app_config
 
 def generate_interview_prep(company, role):
     """

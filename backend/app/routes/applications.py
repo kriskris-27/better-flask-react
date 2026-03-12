@@ -1,12 +1,13 @@
-from flask import Blueprint, request
+import flask
+from flask import request
 from marshmallow import ValidationError as MarshmallowValidationError
-from ..models import get_application_by_id, get_db_connection, update_application_status
-from ..schemas import applications_schema, application_schema
-from ..utils import standard_response
-from ..errors import ResourceNotFoundError, ValidationError, StateMachineError
-from ..services.ai_service import generate_interview_prep
+from app.models import get_application_by_id, get_db_connection, update_application_status
+from app.schemas import applications_schema, application_schema
+from app.utils import standard_response
+from app.errors import ResourceNotFoundError, ValidationError, StateMachineError
+from app.services.ai_service import generate_interview_prep
 
-applications_bp = Blueprint('applications', __name__)
+applications_bp = flask.Blueprint('applications', __name__)
 
 @applications_bp.route('/', methods=['GET'], strict_slashes=False)
 @applications_bp.route('', methods=['GET'], strict_slashes=False)

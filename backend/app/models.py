@@ -1,6 +1,6 @@
 from datetime import datetime
-from .errors import StateMachineError, ResourceNotFoundError
-from . import get_db_connection
+from app.errors import StateMachineError, ResourceNotFoundError
+from app import get_db_connection
 
 # Allowed Transitions Map
 # Key: current status, Value: list of valid next statuses
