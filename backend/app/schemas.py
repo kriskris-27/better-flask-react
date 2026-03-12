@@ -41,4 +41,3 @@ class ContactSchema(Schema):
 application_schema = ApplicationSchema()
 applications_schema = ApplicationSchema(many=True)
 contact_schema = ContactSchema()
-contacts_schema = ContactSchema(many=True)
