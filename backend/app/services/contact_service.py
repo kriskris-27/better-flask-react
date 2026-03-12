@@ -2,7 +2,7 @@
 
 import logging
 
-from app import get_db_connection
+from app import get_db_connection, put_db_connection
 from app.errors import ResourceNotFoundError
 from app.models import get_application_by_id
 
@@ -14,7 +14,7 @@ def create_contact(validated_data: dict) -> dict:
     """Create a contact for an existing application and return it as a dict."""
     app_id = validated_data["application_id"]
 
-    # Ensure the parent application exists; will raise ResourceNotFoundError if not.
+    # Ensure the parent application exists; raises ResourceNotFoundError if not.
     get_application_by_id(app_id)
 
     logger.info(
@@ -54,7 +54,7 @@ def create_contact(validated_data: dict) -> dict:
         raise e
     finally:
         cur.close()
-        conn.close()
+        put_db_connection(conn)  # return to pool
 
 
 def delete_contact(contact_id: int) -> None:
@@ -76,5 +76,4 @@ def delete_contact(contact_id: int) -> None:
         raise e
     finally:
         cur.close()
-        conn.close()
-
+        put_db_connection(conn)  # return to pool

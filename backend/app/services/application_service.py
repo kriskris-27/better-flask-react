@@ -2,7 +2,7 @@
 
 import logging
 
-from app import get_db_connection
+from app import get_db_connection, put_db_connection
 from app.models import get_application_by_id
 
 
@@ -15,13 +15,11 @@ def list_applications(status_filter: str | None = None) -> list[dict]:
     cur = conn.cursor()
     try:
         if status_filter:
-            logger.info("Listing applications with status filter", extra={"status": status_filter})
             cur.execute(
                 "SELECT * FROM applications WHERE status = %s ORDER BY updated_at DESC",
                 (status_filter,),
             )
         else:
-            logger.info("Listing all applications")
             cur.execute("SELECT * FROM applications ORDER BY updated_at DESC")
 
         colnames = [desc[0] for desc in cur.description] if cur.description else []
@@ -29,15 +27,11 @@ def list_applications(status_filter: str | None = None) -> list[dict]:
         return [dict(zip(colnames, row)) for row in rows]
     finally:
         cur.close()
-        conn.close()
+        put_db_connection(conn)  # return to pool — not closed
 
 
 def create_application(validated_data: dict) -> dict:
-    """Create a new application and its initial status history entry.
-
-    Returns the fully-hydrated application (including contacts/history)
-    via models.get_application_by_id for consistency.
-    """
+    """Create a new application and its initial status history entry."""
     logger.info(
         "Creating application",
         extra={
@@ -52,7 +46,6 @@ def create_application(validated_data: dict) -> dict:
     try:
         status = validated_data.get("status", "APPLIED")
 
-        # 1. Insert into applications table
         cur.execute(
             """
             INSERT INTO applications (company, role, location, source, status, notes)
@@ -73,7 +66,6 @@ def create_application(validated_data: dict) -> dict:
         colnames = [desc[0] for desc in cur.description]
         new_app = dict(zip(colnames, new_app_row))
 
-        # 2. Insert initial entry into status_history
         cur.execute(
             """
             INSERT INTO status_history (application_id, from_status, to_status, note)
@@ -83,13 +75,10 @@ def create_application(validated_data: dict) -> dict:
         )
 
         conn.commit()
-
-        # 3. Fetch and return the full, newly created application record
         return get_application_by_id(new_app["id"])
     except Exception as e:
         conn.rollback()
         raise e
     finally:
         cur.close()
-        conn.close()
-
+        put_db_connection(conn)  # return to pool
