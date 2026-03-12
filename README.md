@@ -1,30 +1,39 @@
-## Job Application Tracker
 
-A small Flask API that lets you track job applications, their statuses, and related contacts, and optionally prepares you for interviews using AI.
+# Job Application Tracker ✦
 
-### Features
-- **Strict state machine**: Applications move through a defined path (APPLIED → SCREENING → INTERVIEWING → OFFERED → ACCEPTED, or REJECTED).
-- **AI interview prep**: When an application moves to `INTERVIEWING`, the backend calls Google Gemini to generate interview prep intel.
-- **Audit trail**: Every status change is logged in a `status_history` table.
-- **Contact management**: Store contacts (recruiters, hiring managers, etc.) for each application.
 
-### Tech stack
-- **Backend**: Python (Flask), PostgreSQL (Neon), psycopg2, Marshmallow.
-- **Frontend**: React + Vite (planned; not included in this repo).
-- **AI**: Google Gemini via `google-generativeai`.
+A full-stack application to track job applications through a 
+strict state machine, with AI-powered interview preparation.
 
-### Backend setup (local)
-1. **Create and configure a PostgreSQL database** (e.g., Neon or local Postgres) and note the connection URL.
-2. **Set environment variables**:
-   - `DATABASE_URL` – PostgreSQL connection string.
-   - `GEMINI_API_KEY` – Google Gemini API key (optional, but required for AI prep).
-   - `FLASK_ENV=dev` – use `dev` for local development.
-3. **Install dependencies and run the server**:
-   - `cd backend`
-   - `pip install -r requirements.txt`
-   - `python run.py`
+## ✦ Technical Decisions
 
-On startup, the backend will apply `schema.sql` to initialize tables if `DATABASE_URL` is set.
+### Why SQLite → PostgreSQL (Neon)
+Started with SQLite for zero-config local dev. Migrated to Neon PostgreSQL to demonstrate production-readiness and utilize native ENUM types for rigid status enforcement at the database level.
+
+### Why Raw SQL over ORM
+Using `psycopg2` with raw SQL keeps the data layer explicit and readable. Every query is visible—no hidden JOIN generation, no complex migration framework to debug. This adheres to the "Simple > Clever" principle.
+
+### High-Performance Connection Pooling
+Implemented `ThreadedConnectionPool` to handle concurrent database requests efficiently. This eliminates the overhead of opening new connections for every API call, which is specifically optimized for serverless PostgreSQL platforms like Neon (mitigating cold starts).
+
+### State Machine Design
+Status transitions are strictly enforced in a centralized model. One location (`models.py`) dictates all flow rules. Any new transition logic requires only a single-line modification, keeping routes pure and focused on I/O.
+
+### AI Integration — Graceful Degradation
+Google Gemini is invoked when an application transitions to the `INTERVIEWING` stage. If the AI service is unavailable, the status transition still completes successfully, storing a `null` intel report. Core business functionality never depends on external AI uptime.
+
+### Input Validation (Marshmallow)
+Comprehensive input validation is performed at the API boundary using Marshmallow. Malformed or malicious data is rejected before it ever touches the database layer, ensuring data integrity.
+
+## ✦ Stack
+- **Backend:** Python 3.11, Flask 3.0
+- **Database:** PostgreSQL (Neon), raw SQL via `psycopg2`
+- **Performance:** `psycopg2.pool` for Connection Pooling
+- **Frontend:** React (Vite) + Tailwind CSS
+- **AI:** Google Gemini API
+- **Validation:** Marshmallow
+- **Tests:** Pytest
+
 
 ### Key API endpoints
 - `GET /health` – health check.
@@ -34,3 +43,18 @@ On startup, the backend will apply `schema.sql` to initialize tables if `DATABAS
 - `PATCH /api/applications/<id>/status` – change status (enforces state machine; may trigger AI).
 - `POST /api/contacts` – create a contact for an application.
 - `DELETE /api/contacts/<id>` – delete a contact.
+
+## ✦ Getting Started
+### Backend
+1. `cd backend`
+2. Create `.env` with `DATABASE_URL`, `GEMINI_API_KEY`, and `FLASK_ENV=dev`.
+3. `pip install -r requirements.txt`
+4. `python run.py`
+
+### Frontend
+1. `cd frontend`
+2. Create `.env` (see `.env.example`).
+3. `npm install`
+4. `npm run dev`
+
+
