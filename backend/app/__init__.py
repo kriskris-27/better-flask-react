@@ -54,20 +54,29 @@ def create_app():
     from app.errors import register_error_handlers
     register_error_handlers(app)
 
-    # Create connection pool (min=2, max=10 connections)
+    # Create connection pool (min=1, max=10 connections)
     if app_config.DATABASE_URL:
         try:
+            print("✦ Initializing database pool...")
+            # Append timeout if not present to prevent hanging
+            dsn = app_config.DATABASE_URL
+            if 'connect_timeout' not in dsn:
+                dsn += ('&' if '?' in dsn else '?') + 'connect_timeout=5'
+            
             _connection_pool = pg_pool.ThreadedConnectionPool(
-                minconn=2,
+                minconn=1,
                 maxconn=10,
-                dsn=app_config.DATABASE_URL,
+                dsn=dsn,
             )
-            app.logger.info("Connection pool created (min=2, max=10).")
+            print("✦ Database pool ready.")
         except Exception as e:
+            print(f"✖ Pool initialization failed: {e}")
             app.logger.error(f"Failed to create connection pool: {e}")
 
     # Initialize Database schema
+    print("✦ Checking database schema...")
     init_db(app)
+    print("✦ API Server starting...")
 
     # Register Blueprints
     from app.routes.applications import applications_bp
